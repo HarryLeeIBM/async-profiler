@@ -67,6 +67,18 @@ ifeq ($(JAVA_HOME),)
 endif
 
 OS:=$(shell uname -s)
+ifeq ($(OS), AIX)
+  CXXFLAGS += -m64 -U_FORTIFY_SOURCE -Wl,-z,defs -Wl,--exclude-libs,ALL -static-libstdc++ -static-libgcc -fdata-sections -ffunction-sections -Wl,--gc-sections
+  ifeq ($(MERGE),true)
+    CXXFLAGS += -fwhole-program
+  endif
+  LIBS += -lrt
+  INCLUDES += -I$(JAVA_HOME)/include/aix
+  SOEXT=so
+  PACKAGE_EXT=tar.gz
+  OS_TAG=aix
+  ARCH_TAG=ppc64be
+else
 ifeq ($(OS),Darwin)
   CXXFLAGS += -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -Wl,-rpath,@executable_path/../lib -Wl,-rpath,@executable_path/../lib/server
   INCLUDES += -I$(JAVA_HOME)/include/darwin
