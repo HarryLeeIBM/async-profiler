@@ -50,7 +50,7 @@ LOG_LEVEL=
 SKIP=
 TEST_FLAGS=-DlogDir=$(LOG_DIR) -DlogLevel=$(LOG_LEVEL) -Dskip=$(SKIP)
 
-SOURCES := $(wildcard src/*.cpp)
+SOURCES :=  src/os_aix.cpp
 HEADERS := $(wildcard src/*.h)
 RESOURCES := $(wildcard src/res/*)
 JAVA_HELPER_CLASSES := $(wildcard src/helper/one/profiler/*.class)
@@ -68,7 +68,7 @@ endif
 
 OS:=$(shell uname -s)
 ifeq ($(OS), AIX)
-  CXXFLAGS += -D__PPC64__ 
+  CXXFLAGS += -D__PPC64__ -D__AIX__ 
   ifeq ($(MERGE),true)
     CXXFLAGS += -fwhole-program
   endif
@@ -177,10 +177,10 @@ build/$(JFRCONV): src/launcher/* build/$(CONVERTER_JAR)
 
 build/$(LIB_PROFILER): $(SOURCES) $(HEADERS) $(RESOURCES) $(JAVA_HELPER_CLASSES)
 ifeq ($(MERGE),true)
-	for f in src/*.cpp; do echo '#include "'$$f'"'; done |\
+	for f in src/os_aix.cpp; do echo '#include "'$$f'"'; done |\
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFS) $(INCLUDES) -fPIC -shared -o $@ -xc++ - $(LIBS)
 else
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFS) $(INCLUDES) -fPIC -shared -o $@ $(SOURCES) $(LIBS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFS) $(INCLUDES) -fPIC -shared -o $@ src/os_aix.cpp $(LIBS)
 endif
 
 build/$(API_JAR): $(API_SOURCES)
@@ -198,10 +198,10 @@ build/$(CONVERTER_JAR): $(CONVERTER_SOURCES) $(RESOURCES)
 %.class: %.java
 	$(JAVAC) -source 7 -target 7 -Xlint:-options -g:none $^
 
-build/test/cpptests: $(CPP_TEST_SOURCES) $(CPP_TEST_HEADER) $(SOURCES) $(HEADERS) $(RESOURCES) $(JAVA_HELPER_CLASSES)
+build/test/cpptests: $(CPP_TEST_SOURCES) $(CPP_TEST_HEADER) src/os_aix.cpp $(HEADERS) $(RESOURCES) $(JAVA_HELPER_CLASSES)
 	mkdir -p build/test
 ifeq ($(MERGE),true)
-	for f in src/*.cpp test/native/*.cpp; do echo '#include "'$$f'"'; done |\
+	for f in src/os_aix.cpp test/native/*.cpp; do echo '#include "'$$f'"'; done |\
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFS) $(INCLUDES) $(CPP_TEST_INCLUDES) -fPIC -o $@ -xc++ - $(LIBS)
 else
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEFS) $(INCLUDES) $(CPP_TEST_INCLUDES) -fPIC -o $@ $(SOURCES) $(CPP_TEST_SOURCES) $(LIBS)
