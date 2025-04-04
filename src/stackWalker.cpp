@@ -8,7 +8,7 @@
 #include "dwarf.h"
 #include "profiler.h"
 #include "safeAccess.h"
-#include "stackFrame.h"
+//#include "stackFrame.h"
 #include "vmStructs.h"
 
 
@@ -63,7 +63,7 @@ static jmethodID getMethodId(VMMethod* method) {
 
 
 int StackWalker::walkFP(void* ucontext, const void** callchain, int max_depth, StackContext* java_ctx) {
-    const void* pc;
+ /*   const void* pc;
     uintptr_t fp;
     uintptr_t sp;
     uintptr_t bottom = (uintptr_t)&sp + MAX_WALK_SIZE;
@@ -110,10 +110,11 @@ int StackWalker::walkFP(void* ucontext, const void** callchain, int max_depth, S
     }
 
     return depth;
+*/
 }
 
 int StackWalker::walkDwarf(void* ucontext, const void** callchain, int max_depth, StackContext* java_ctx) {
-    const void* pc;
+ /*   const void* pc;
     uintptr_t fp;
     uintptr_t sp;
     uintptr_t bottom = (uintptr_t)&sp + MAX_WALK_SIZE;
@@ -201,10 +202,12 @@ int StackWalker::walkDwarf(void* ucontext, const void** callchain, int max_depth
     }
 
     return depth;
+*/
+return 0;
 }
 
 int StackWalker::walkVM(void* ucontext, ASGCT_CallFrame* frames, int max_depth, StackDetail detail) {
-    if (ucontext == NULL) {
+/*    if (ucontext == NULL) {
         return walkVM(ucontext, frames, max_depth, detail,
                       callerPC(), (uintptr_t)callerSP(), (uintptr_t)callerFP());
     } else {
@@ -212,10 +215,12 @@ int StackWalker::walkVM(void* ucontext, ASGCT_CallFrame* frames, int max_depth, 
         return walkVM(ucontext, frames, max_depth, detail,
                       (const void*)frame.pc(), frame.sp(), frame.fp());
     }
+*/
+return 0;
 }
 
 int StackWalker::walkVM(void* ucontext, ASGCT_CallFrame* frames, int max_depth, JavaFrameAnchor* anchor) {
-    uintptr_t sp = anchor->lastJavaSP();
+/*    uintptr_t sp = anchor->lastJavaSP();
     if (sp == 0) {
         return 0;
     }
@@ -231,11 +236,13 @@ int StackWalker::walkVM(void* ucontext, ASGCT_CallFrame* frames, int max_depth, 
     }
 
     return walkVM(ucontext, frames, max_depth, VM_BASIC, pc, sp, fp);
+*/
+return 0;
 }
 
 int StackWalker::walkVM(void* ucontext, ASGCT_CallFrame* frames, int max_depth,
                         StackDetail detail, const void* pc, uintptr_t sp, uintptr_t fp) {
-    StackFrame frame(ucontext);
+ /*   StackFrame frame(ucontext);
     uintptr_t bottom = (uintptr_t)&frame + MAX_WALK_SIZE;
 
     Profiler* profiler = Profiler::instance();
@@ -447,6 +454,8 @@ int StackWalker::walkVM(void* ucontext, ASGCT_CallFrame* frames, int max_depth,
     if (vm_thread != NULL) vm_thread->exception() = saved_exception;
 
     return depth;
+*/
+return 0;
 }
 
 void StackWalker::checkFault() {

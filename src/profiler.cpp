@@ -18,7 +18,7 @@
 #include "mallocTracer.h"
 #include "lockTracer.h"
 #include "wallClock.h"
-#include "j9ObjectSampler.h"
+//#include "j9ObjectSampler.h"
 #include "j9StackTraces.h"
 #include "j9WallClock.h"
 #include "instrument.h"
@@ -30,7 +30,7 @@
 #include "frameName.h"
 #include "os.h"
 #include "safeAccess.h"
-#include "stackFrame.h"
+//#include "stackFrame.h"
 #include "stackWalker.h"
 #include "symbols.h"
 #include "tsc.h"
@@ -49,8 +49,8 @@ static PerfEvents perf_events;
 static AllocTracer alloc_tracer;
 static MallocTracer malloc_tracer;
 static LockTracer lock_tracer;
-static ObjectSampler object_sampler;
-static J9ObjectSampler j9_object_sampler;
+//static ObjectSampler object_sampler;
+//static J9ObjectSampler j9_object_sampler;
 static WallClock wall_clock;
 static J9WallClock j9_wall_clock;
 static CTimer ctimer;
@@ -389,7 +389,8 @@ int Profiler::convertNativeTrace(int native_frames, const void** callchain, ASGC
 }
 
 int Profiler::getJavaTraceAsync(void* ucontext, ASGCT_CallFrame* frames, int max_depth, StackContext* java_ctx) {
-    // Workaround for JDK-8132510: it's not safe to call GetEnv() inside a signal handler
+ /*  
+ // Workaround for JDK-8132510: it's not safe to call GetEnv() inside a signal handler
     // since JDK 9, so we do it only for threads already registered in ThreadLocalStorage
     VMThread* vm_thread = VMThread::current();
     if (vm_thread == NULL) {
@@ -552,6 +553,8 @@ int Profiler::getJavaTraceAsync(void* ucontext, ASGCT_CallFrame* frames, int max
     trace.frames->bci = BCI_ERROR;
     trace.frames->method_id = (jmethodID)err_string;
     return trace.frames - frames + 1;
+*/
+return 0;
 }
 
 int Profiler::getJavaTraceJvmti(jvmtiFrameInfo* jvmti_frames, ASGCT_CallFrame* frames, int start_depth, int max_depth) {
@@ -613,7 +616,8 @@ void Profiler::fillFrameTypes(ASGCT_CallFrame* frames, int num_frames, NMethod* 
 }
 
 u64 Profiler::recordSample(void* ucontext, u64 counter, EventType event_type, Event* event) {
-    atomicInc(_total_samples);
+ /*  
+ atomicInc(_total_samples);
 
     int tid = fastThreadId();
     u32 lock_index = getLockIndex(tid);
@@ -709,6 +713,7 @@ u64 Profiler::recordSample(void* ucontext, u64 counter, EventType event_type, Ev
 
     _locks[lock_index].unlock();
     return (u64)tid << 32 | call_trace_id;
+*
 }
 
 void Profiler::recordExternalSample(u64 counter, int tid, EventType event_type, Event* event, int num_frames, ASGCT_CallFrame* frames) {
@@ -840,7 +845,7 @@ void Profiler::uninstallTraps() {
 }
 
 void Profiler::trapHandler(int signo, siginfo_t* siginfo, void* ucontext) {
-    StackFrame frame(ucontext);
+ /*   StackFrame frame(ucontext);
 
     if (_begin_trap.covers(frame.pc())) {
         profiling_window._start_time = TSC::ticks();
@@ -858,10 +863,11 @@ void Profiler::trapHandler(int signo, siginfo_t* siginfo, void* ucontext) {
     } else if (orig_trapHandler != NULL) {
         orig_trapHandler(signo, siginfo, ucontext);
     }
+*/
 }
 
 void Profiler::segvHandler(int signo, siginfo_t* siginfo, void* ucontext) {
-    StackFrame frame(ucontext);
+ /*   StackFrame frame(ucontext);
     uintptr_t pc = frame.pc();
 
     uintptr_t length = SafeAccess::skipLoad(pc);
@@ -892,6 +898,7 @@ void Profiler::segvHandler(int signo, siginfo_t* siginfo, void* ucontext) {
     }
 
     orig_segvHandler(signo, siginfo, ucontext);
+*/
 }
 
 void Profiler::wakeupHandler(int signo) {
@@ -1022,13 +1029,14 @@ Engine* Profiler::selectEngine(const char* event_name) {
 }
 
 Engine* Profiler::selectAllocEngine(long alloc_interval, bool live) {
-    if (VM::addSampleObjectsCapability()) {
+  /*  if (VM::addSampleObjectsCapability()) {
         return &object_sampler;
     } else if (VM::isOpenJ9()) {
         return &j9_object_sampler;
     } else {
         return &alloc_tracer;
-    }
+    }*/
+return 0;
 }
 
 Engine* Profiler::activeEngine() {
