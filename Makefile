@@ -68,7 +68,7 @@ endif
 
 OS:=$(shell uname -s)
 ifeq ($(OS), AIX)
-  CXXFLAGS += -m64 -U_FORTIFY_SOURCE -Wl,-z,defs -Wl,--exclude-libs,ALL -static-libstdc++ -static-libgcc -fdata-sections -ffunction-sections -Wl,--gc-sections
+  CXXFLAGS += -D__PPC64__ 
   ifeq ($(MERGE),true)
     CXXFLAGS += -fwhole-program
   endif
@@ -103,7 +103,7 @@ else
   PACKAGE_EXT=tar.gz
   OS_TAG=linux
 endif
-
+endif
 ifeq ($(ARCH_TAG),)
   ARCH:=$(shell uname -m)
   ifeq ($(ARCH),x86_64)

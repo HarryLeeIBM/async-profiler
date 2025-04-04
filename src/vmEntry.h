@@ -154,13 +154,13 @@ class VM {
 
     static bool addSampleObjectsCapability() {
         jvmtiCapabilities capabilities = {0};
-        capabilities.can_generate_sampled_object_alloc_events = 1;
+        //capabilities.can_generate_sampled_object_alloc_events = 1;
         return _jvmti->AddCapabilities(&capabilities) == 0;
     }
 
     static void releaseSampleObjectsCapability() {
         jvmtiCapabilities capabilities = {0};
-        capabilities.can_generate_sampled_object_alloc_events = 1;
+ //       capabilities.can_generate_sampled_object_alloc_events = 1;
         _jvmti->RelinquishCapabilities(&capabilities);
     }
 

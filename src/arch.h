@@ -111,7 +111,7 @@ const int PERF_REG_PC = 32;  // PERF_REG_ARM64_PC
 #define callerFP()        __builtin_frame_address(1)
 #define callerSP()        __builtin_frame_address(1)
 
-#elif defined(__PPC64__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+#elif defined(__PPC64__) 
 
 typedef unsigned int instruction_t;
 const instruction_t BREAKPOINT = 0x7fe00008;
@@ -126,8 +126,8 @@ const int PLT_HEADER_SIZE = 24;
 const int PLT_ENTRY_SIZE = 24;
 const int PERF_REG_PC = 32;  // PERF_REG_POWERPC_NIP
 
-#define spinPause()       asm volatile("yield") // does nothing, but using or 1,1,1 would lead to other problems
-#define rmb()             asm volatile ("sync" : : : "memory") // lwsync would do but better safe than sorry
+#define spinPause()      // asm volatile("yield") // does nothing, but using or 1,1,1 would lead to other problems
+#define rmb()             //asm volatile ("sync" : : : "memory") // lwsync would do but better safe than sorry
 #define flushCache(addr)  __builtin___clear_cache((char*)(addr), (char*)(addr) + sizeof(instruction_t))
 
 #define callerFP()        __builtin_frame_address(1)
