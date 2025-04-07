@@ -5,6 +5,7 @@
 
 #ifdef __AIX__
 
+#include <stdlib.h>
 #include <pthread.h>
 #include <sys/mman.h>
 #include <sys/time.h>
@@ -14,22 +15,85 @@
 #include "os.h"
 
 class AixThreadList : public ThreadList {
+  private:
+    pthread_t* _threads;
+    int _count;
+    int _index;
 
   public:
-    AixThreadList() {;
+    AixThreadList() {
+        _threads = NULL;
+        _count = 0;
+        _index = -1;
+        update();
     }
 
     ~AixThreadList() {
+        free(_threads);
     }
 
     int next() {
+        if (++_index < _count) {
+            return (int)_threads[_index];
+        }
         return 0;
     }
 
     void update() {
+        free(_threads);
+        _threads = NULL;
+        _count = 0;
+        _index = -1;
+        
+        // Get the maximum number of threads
+        int max_threads = sysconf(_SC_THREAD_THREADS_MAX);
+        if (max_threads <= 0) {
+            max_threads = 1024;  // Fallback value
+        }
+        
+        _threads = (pthread_t*)malloc(max_threads * sizeof(pthread_t));
+        if (_threads == NULL) {
+            return;
+        }
+        
+        // Use pthread_getthrds_np to enumerate all threads in the process
+        struct __pthrdsinfo* thread_info = (__pthrdsinfo*)malloc(sizeof(__pthrdsinfo));
+        if (thread_info == NULL) {
+            free(_threads);
+            _threads = NULL;
+            return;
+        }
+        
+        void* reg_buf = malloc(1024);  // Buffer for register values
+        int reg_buf_size = 1024;
+        pthread_t thread = 0;          // Will be updated by pthread_getthrds_np
+        int index = 0;
+        
+        // Loop until we've found all threads or reached max_threads
+        while (_count < max_threads) {
+            int ret = pthread_getthrds_np(&thread, PTHRDSINFO_QUERY_ALL,
+                                         thread_info, sizeof(__pthrdsinfo),
+                                         reg_buf, &reg_buf_size);
+            
+            if (thread == 0) {
+                // No more threads or error
+                break;
+            }
+            
+            // Store the thread ID
+            _threads[_count++] = thread;
+        }
+        
+        free(thread_info);
+        free(reg_buf);
+        
+        // If no threads were found, at least include the current thread
+        if (_count == 0) {
+            _threads[0] = pthread_self();
+            _count = 1;
+        }
     }
 };
-
 
 JitWriteProtection::JitWriteProtection(bool enable) {
 
