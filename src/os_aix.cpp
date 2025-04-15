@@ -18,90 +18,63 @@
 #include <sys/thread.h> 
 #include "os.h"
 
-class AixThreadList : public ThreadList {
-  private:
-    pthread_t* _threads;
-    int _count;
-    int _index;
 
-  public:
-    AixThreadList() {
-        _threads = NULL;
-        _count = 0;
-        _index = -1;
-        update();
+#define MAX_REG_BUFFER 1024
+class AixThreadList : public ThreadList {
+private:
+    int *_thread_array;
+    u32 _capacity;
+
+    void addThread(int thread_id) {
+        if (_count >= _capacity) {
+            _capacity = _count * 2;
+            _thread_array = (int *)realloc(_thread_array, _capacity * sizeof(int));
+        }
+        _thread_array[_count++] = thread_id;
+    }
+
+    void fillThreadArray() {
+        struct __pthrdsinfo thread_info;
+        unsigned char reg_buf[MAX_REG_BUFFER];
+
+        int reg_buf_size = MAX_REG_BUFFER;
+        pthread_t thread = 0;
+        int index = 0;
+        while (true) {
+            // Get pthread ID
+            int ret = pthread_getthrds_np(&thread, PTHRDSINFO_QUERY_ALL,
+                                          &thread_info, sizeof(__pthrdsinfo),
+                                          reg_buf, &reg_buf_size);
+
+            if (thread == 0 || ret != 0) {
+                break;
+            }
+            addThread(thread_info.__pi_tid);
+        }
+    }
+
+public:
+    AixThreadList() : ThreadList() {
+        _capacity = 128;
+        _thread_array = (int *)malloc(_capacity * sizeof(int));
+        fillThreadArray();
     }
 
     ~AixThreadList() {
-        free(_threads);
+        free(_thread_array);
     }
 
     int next() {
-        if (++_index < _count) {
-            return (int)_threads[_index];
-        }
-        return 0;
+        return _thread_array[_index++];
     }
 
     void update() {
-        free(_threads);
-        _threads = NULL;
-        _count = 0;
-        _index = -1;
-        
-        // Get the maximum number of threads
-        int max_threads = sysconf(_SC_THREAD_THREADS_MAX);
-        if (max_threads <= 0) {
-            max_threads = 1024;  // Fallback value
-        }
-        
-        _threads = (pthread_t*)malloc(max_threads * sizeof(pthread_t));
-        if (_threads == NULL) {
-            return;
-        }
-        
-        // Use pthread_getthrds_np to enumerate all threads in the process
-        struct __pthrdsinfo* thread_info = (__pthrdsinfo*)malloc(sizeof(__pthrdsinfo));
-        if (thread_info == NULL) {
-            free(_threads);
-            _threads = NULL;
-            return;
-        }
-        
-        void* reg_buf = malloc(1024);  // Buffer for register values
-        int reg_buf_size = 1024;
-        pthread_t thread = 0;          // Will be updated by pthread_getthrds_np
-        int index = 0;
-        
-        // Loop until we've found all threads or reached max_threads
-        while (_count < max_threads) {
-            int ret = pthread_getthrds_np(&thread, PTHRDSINFO_QUERY_ALL,
-                                         thread_info, sizeof(__pthrdsinfo),
-                                         reg_buf, &reg_buf_size);
-            
-            if (thread == 0) {
-                // No more threads or error
-                break;
-            }
-            
-            // Store the thread ID
-            _threads[_count++] = thread;
-        }
-        
-        free(thread_info);
-        free(reg_buf);
-        
-        // If no threads were found, at least include the current thread
-        if (_count == 0) {
-            _threads[0] = pthread_self();
-            _count = 1;
-        }
+        _index = _count = 0;
+        fillThreadArray();
     }
 };
 
 JitWriteProtection::JitWriteProtection(bool enable) {
-
-
 }
 
 JitWriteProtection::~JitWriteProtection() {
