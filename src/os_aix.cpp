@@ -114,23 +114,12 @@ u64 OS::processStartTime() {
     static u64 start_time = 0;
 
     if (start_time == 0) {
-        // On AIX, we can use getprocs64() to get process information
         struct procentry64 proc_info;
         pid_t pid = getpid();
         
-        // Initialize the id field to our process ID
         proc_info.pi_pid = pid;
-        
-        // Get process information
         if (getprocs64(&proc_info, sizeof(proc_info), NULL, 0, &pid, 1) == 1) {
-            // pi_start contains the process start time in seconds since epoch
-            // Convert to milliseconds for consistency with other platforms
             start_time = (u64)proc_info.pi_start * 1000;
-        } else {
-            // Fallback: use current time
-            struct timeval tv;
-            gettimeofday(&tv, NULL);
-            start_time = ((u64)tv.tv_sec * 1000) + (tv.tv_usec / 1000);
         }
     }
 
@@ -146,8 +135,9 @@ u64 OS::ntoh64(u64 x) {
     return x;
 }
 
+// Not used on AIX
 int OS::getMaxThreadId() {
-    return 0x7fffffff;
+    return 262143;
 }
 
 int OS::processId() {
@@ -161,43 +151,18 @@ int OS::threadId() {
     return (int)kernel_tid;
 }
 const char* OS::schedPolicy(int thread_id) {
-    // Not used on macOS
+    // Not used on AIX
     return "SCHED_OTHER";
 }
 
 bool OS::threadName(int thread_id, char* name_buf, size_t name_len) {
-   
+    snprintf(name_buf, name_len, "%d\0", thread_id);
     return true;
 }
 
-ThreadState OS::threadState(int thread_id) {
-    ThreadState state = THREAD_UNKNOWN; 
-    
-    // Convert thread_id to pthread_t
-    pthread_t thread = (pthread_t)thread_id;
-    
-    // Use pthread_getthrds_np to get thread information
-    struct __pthrdsinfo thread_info;
-    void* reg_buf = malloc(1024);  // Buffer for register values
-    int reg_buf_size = 1024;
-    
-    int ret = pthread_getthrds_np(&thread, PTHRDSINFO_QUERY_TID,
-                                 &thread_info, sizeof(__pthrdsinfo),
-                                 reg_buf, &reg_buf_size);
-    
-    if (ret == 0) {
-        switch (thread_info.__pi_state) {
-            case PTHRDSINFO_STATE_SLEEP:
-                state = THREAD_SLEEPING;  // Sleeping
-                break;
-            case PTHRDSINFO_STATE_RUN:
-                state = THREAD_RUNNING;  // Running
-                break;
-        }
-    }
-    
-    free(reg_buf);
-    return state;
+// Not used on AIX
+ThreadState OS::threadState(int thread) {
+    return THREAD_UNKNOWN;
 }
 
 u64 OS::threadCpuTime(int thread_id) {
@@ -241,7 +206,7 @@ SigAction OS::installSignalHandler(int signo, SigAction action, SigHandler handl
         if (signo > 0 && signo < sizeof(installed_sigaction) / sizeof(installed_sigaction[0])) {
             installed_sigaction[signo] = action;
         }
-  }
+    }
 
     sigaction(signo, &sa, &oldsa);
     return oldsa.sa_sigaction;
@@ -256,28 +221,12 @@ SigAction OS::replaceCrashHandler(SigAction action) {
     return old_action;
 }
 
+// Not used on AIX
 int OS::getProfilingSignal(int mode) {
-    static int preferred_signals[2] = {SIGPROF, SIGVTALRM};
-
-    const u64 allowed_signals =
-        1ULL << SIGPROF | 1ULL << SIGVTALRM | 1ULL << SIGEMT | 1ULL << SIGSYS;
-
-    int& signo = preferred_signals[mode];
-    int initial_signo = signo;
-    int other_signo = preferred_signals[1 - mode];
-
-    do {
-        struct sigaction sa;
-        if ((allowed_signals & (1ULL << signo)) != 0 && signo != other_signo && sigaction(signo, NULL, &sa) == 0) {
-            if (sa.sa_handler == SIG_DFL || sa.sa_handler == SIG_IGN || sa.sa_sigaction == installed_sigaction[signo]) {
-                return signo;
-            }
-        }
-    } while ((signo = (signo + 1) & 31) != initial_signo);
-
-    return signo;
+    return 0;
 }
 
+// Not used in AIX
 bool OS::sendSignalToThread(int thread_id, int signo) {
     return 0;
 }
@@ -339,5 +288,3 @@ void OS::freePageCache(int fd, off_t start_offset) {
 }
 
 #endif // __AIX__
-
-
